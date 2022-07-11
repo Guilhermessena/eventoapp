@@ -1,0 +1,12 @@
+package com.api.eventoapp.controller;
+
+import org.springframework.stereotype.Controller;
+
+@Controller
+public class EventoController {
+
+	public String form() {
+		return "formEvento";
+	}
+
+}

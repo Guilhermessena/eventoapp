@@ -1,0 +1,15 @@
+content_assist_lru_history=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><history maxLHS\="100" maxRHS\="10"><lhs name\="org.springframework.http.HttpEntity"><rhs name\="org.springframework.http.ResponseEntity"/></lhs><lhs name\="org.springframework.http.ResponseEntity"><rhs name\="org.springframework.http.ResponseEntity"/></lhs><lhs name\="java.lang.Enum"><rhs name\="org.springframework.http.HttpStatus"/><rhs name\="org.springframework.orm.jpa.vendor.Database"/><rhs name\="javax.persistence.GenerationType"/><rhs name\="org.springframework.web.bind.annotation.RequestMethod"/></lhs><lhs name\="com.api.booking.service.BookingService"><rhs name\="com.api.booking.service.BookingService"/></lhs><lhs name\="java.time.temporal.Temporal"><rhs name\="java.time.LocalDate"/></lhs><lhs name\="java.time.temporal.TemporalAccessor"><rhs name\="java.time.LocalDate"/></lhs><lhs name\="java.time.temporal.TemporalAdjuster"><rhs name\="java.time.LocalDate"/></lhs><lhs name\="java.time.chrono.ChronoLocalDate"><rhs name\="java.time.LocalDate"/></lhs><lhs name\="org.springframework.jdbc.datasource.AbstractDriverBasedDataSource"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="org.springframework.jdbc.datasource.AbstractDataSource"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="javax.sql.DataSource"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="javax.sql.CommonDataSource"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="java.sql.Wrapper"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"><rhs name\="org.springframework.jdbc.datasource.DriverManagerDataSource"/></lhs><lhs name\="com.api.validacpf.service.UsuarioService"><rhs name\="com.api.validacpf.service.UsuarioService"/></lhs><lhs name\="com.api.validacpf.model.UsuarioModel"><rhs name\="com.api.validacpf.model.UsuarioModel"/></lhs><lhs name\="br.com.eicon.actopostura.dto.response.UserResponseDTO"><rhs name\="br.com.eicon.actopostura.dto.response.UserResponseDTO"/></lhs></history>
+content_assist_number_of_computers=15
+content_assist_proposals_background=255,255,255
+content_assist_proposals_foreground=0,0,0
+eclipse.preferences.version=1
+org.eclipse.jdt.internal.ui.navigator.layout=2
+org.eclipse.jdt.internal.ui.navigator.librariesnode=true
+org.eclipse.jdt.ui.exception.name=e
+org.eclipse.jdt.ui.formatterprofiles.version=22
+org.eclipse.jdt.ui.gettersetter.use.is=true
+org.eclipse.jdt.ui.overrideannotation=true
+spelling_locale_initialized=true
+typefilter_migrated_2=true
+useAnnotationsPrefPage=true
+useQuickDiffPrefPage=true

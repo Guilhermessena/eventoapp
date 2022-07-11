@@ -1,0 +1,20 @@
+package com.api.eventoapp.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.api.eventoapp.repository.EventoRepository;
+
+@Controller
+public class EventoController {
+
+	@Autowired
+	private EventoRepository eventoRepository;
+
+	@RequestMapping("/cadastrarEvento")
+	public String form() {
+		return "evento/formEvento";
+	}
+
+}

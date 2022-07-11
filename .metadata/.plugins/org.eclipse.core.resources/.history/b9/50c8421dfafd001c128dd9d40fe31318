@@ -1,0 +1,5 @@
+package com.api.eventoapp.model;
+
+public class Convidado {
+
+}

@@ -1,0 +1,32 @@
+1655069255026	Delete element
+1655069263466	Delete element
+1655069266788	Delete element
+1655069270502	Delete element
+1655071926735	Delete element
+1655080696991	Delete element
+1655080700576	Delete element
+1655084703420	Delete element
+1655084706812	Delete element
+1655085659168	Rename package 'com.api.parkingcontrol.controller'
+1655085688683	Rename type 'ParkingSpotController'
+1655085724942	Delete element
+1655085755441	Rename package 'com.api.parkingcontrol.dto'
+1655085771258	Rename type 'ParkingSpotDto'
+1655085818683	Rename package 'com.api.parkingcontrol.model'
+1655085841816	Rename type 'ParkingSpotModel'
+1655085866837	Rename package 'com.api.parkingcontrol.repository'
+1655085881119	Rename type 'ParkingSpotRepository'
+1655085900799	Rename package 'com.api.parkingcontrol.service'
+1655085915502	Rename type 'ParkingSpotService'
+1655087059786	Delete element
+1655087063331	Delete element
+1655087305774	Rename package 'com.api.parkingcontrol.controller'
+1655087317551	Rename package 'com.api.parkingcontrol.dto'
+1655087327218	Rename package 'com.api.parkingcontrol.model'
+1655087338689	Rename package 'com.api.parkingcontrol.repository'
+1655087348358	Rename package 'com.api.parkingcontrol.service'
+1655087366668	Rename type 'ParkingSpotController'
+1655087388356	Rename type 'ParkingSpotDto'
+1655087397448	Rename type 'ParkingSpotModel'
+1655087406979	Rename type 'ParkingSpotRepository'
+1655087417488	Rename type 'ParkingSpotService'

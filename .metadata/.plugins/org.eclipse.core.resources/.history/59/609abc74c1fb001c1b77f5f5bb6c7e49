@@ -1,0 +1,61 @@
+package br.com.eicon.actopostura.resource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.eicon.actopostura.dto.response.UserResponseDTO;
+import br.com.eicon.actopostura.service.UserService;
+import br.com.eicon.actopostura.util.ResponseService;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
+@RestController
+@RequestMapping("/user")
+public class UserExistsResource {
+
+	@Autowired
+	private UserService userService;
+
+	/**
+	 * Verifica se o cpf ja existe com a informação repassada
+	 * 
+	 * @param cpf
+	 * @return
+	 */
+	@GetMapping(value = "/exists", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> existsUser(@RequestParam(value = "cpf", required = false) String cpf) {
+
+		try {
+
+			UserResponseDTO result = null;
+//			UserResponseDTO userResponseDTO;
+			if (cpf != null) {
+				result = userService.findByCpf(cpf);
+//				if (result.TRUE) {
+//					result = userResponseDTO;
+//				}
+			}
+
+			if (result == null) {
+				return ResponseService.setError("Campo de checagem não informado");
+			}
+
+			return ResponseService.setResponse(true, result);
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Não foi possível efetuar a consulta");
+
+		}
+
+	}
+
+}

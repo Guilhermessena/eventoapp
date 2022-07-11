@@ -1,0 +1,653 @@
+package br.com.eicon.actopostura.resource;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.http.auth.AuthenticationException;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.eicon.actopostura.codeciphers.FingerCodeciphersRequestDTO;
+import br.com.eicon.actopostura.codeciphers.FingerCodeciphersResponseDTO;
+import br.com.eicon.actopostura.codeciphers.ResponseFailedCodeciphersException;
+import br.com.eicon.actopostura.dto.request.LoginRequestDTO;
+import br.com.eicon.actopostura.dto.request.UserRequestDTO;
+import br.com.eicon.actopostura.dto.response.LoginResponseDTO;
+import br.com.eicon.actopostura.dto.response.UserResponseDTO;
+import br.com.eicon.actopostura.model.User;
+import br.com.eicon.actopostura.service.UserService;
+import br.com.eicon.actopostura.util.ResponseService;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
+@RestController
+@RequestMapping("/user")
+public class UserResource {
+
+	@Autowired
+	private HttpServletRequest request;
+
+	@Autowired
+	private UserService userService;
+
+	/**
+	 * Retorna a lista de usuários cadastrados
+	 * 
+	 * @return
+	 */
+	@GetMapping
+	public ResponseEntity<?> findAll(@RequestParam(value = "ids", required = false) String[] ids) {
+
+		User user = (User) request.getAttribute("sessaoUsuario");
+
+		if (ids != null && ids.length > 0) {
+			return ResponseService.setResponse(true, userService.findByIdInAndSecretaryId(
+					Stream.of(ids).mapToLong(Long::parseLong).toArray(), user.getSecretaryId()));
+		}
+
+		return ResponseService.setResponse(true, userService.findBySecretaryId(user.getSecretaryId(), user.getEicon()));
+
+	}
+
+	/**
+	 * Retorna a lista de fiscais por secretaria de um município
+	 * 
+	 * @param municipalityID
+	 * @param secretaryID
+	 * @return
+	 */
+	@GetMapping("/active/{municipalityID}/{secretaryID}")
+	public ResponseEntity<?> findFiscalUsers(@PathVariable Long municipalityID, @PathVariable Long secretaryID) {
+		return ResponseService.setResponse(true,
+				userService.findFiscalUsersByMunicipalityIdAndSecretaryId(municipalityID, secretaryID, true));
+
+	}
+
+	/**
+	 * Retorna as informações do usuário com base no id
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/{id}")
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> findById(@PathVariable Long id,
+			@RequestParam(value = "allData", required = false) Boolean allData) {
+
+		Optional<UserResponseDTO> user;
+
+		if (allData == null || allData.booleanValue()) {
+			user = Optional.ofNullable(userService.findById(id, true, false, false, true, true));
+		} else {
+			user = Optional.ofNullable(userService.findById(id, false, false, false, false, false));
+		}
+
+		if (!user.isPresent()) {
+			return ResponseEntity.noContent().build();
+		}
+
+		return ResponseService.setResponse(true, user.get());
+
+	}
+
+	/**
+	 * Retorna todas as secretarias habilitadas ao usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/{id}/secretaries")
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> findSecretariesById(@PathVariable Long id) {
+
+		return ResponseService.setResponse(true, userService.findSecretariesByUserId(id));
+
+	}
+
+	/**
+	 * Retorna os dados de um usuário baseado no token
+	 * 
+	 * @param token
+	 * @return
+	 */
+	@GetMapping(value = "/logged", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> findByLogged() {
+
+		Optional<UserResponseDTO> user = Optional.ofNullable(userService.findByLogged(true, true, true, true, true));
+
+		if (!user.isPresent()) {
+			return ResponseEntity.noContent().build();
+		}
+
+		return ResponseService.setResponse(true, user.get());
+
+	}
+
+	/**
+	 * Verifica se existe algum usuário com umas das informações repassadas
+	 * 
+	 * @param email
+	 * @param cpf
+	 * @return
+	 */
+	@GetMapping(value = "/exists", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> exists(@RequestParam(value = "email", required = false) String email,
+			@RequestParam(value = "cpf", required = false) String cpf) {
+
+		try {
+
+			Boolean result = null;
+
+			if (email != null) {
+				result = userService.findByEmail(email) != null;
+			}
+
+			if (cpf != null) {
+				result = userService.findByCpf(cpf) != null;
+			}
+
+			if (result == null) {
+				return ResponseService.setError("Nenhum campo de checagem informado");
+			}
+
+			return ResponseService.setResponse(true, result);
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Não foi possível efetuar a consulta");
+
+		}
+
+	}
+
+	/**
+	 * Verifica se o cpf ja existe com a informação repassada
+	 * 
+	 * @param cpf
+	 * @return
+	 */
+	@GetMapping(value = "/exists", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> existsUser(@RequestParam(value = "cpf", required = false) String cpf) {
+
+		try {
+
+			UserResponseDTO result = null;
+			if (cpf != null) {
+				result = userService.findByCpf(cpf);
+			} else {
+				return ResponseService.setError("CPF não cadastrado");
+			}
+
+			if (result == null) {
+				return ResponseService.setError("Campo de checagem não informado");
+			}
+
+			return ResponseService.setResponse(true, result);
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Não foi possível efetuar a consulta");
+
+		}
+	}
+
+	/**
+	 * Atualiza o status do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@PutMapping("/{id}/change-status/{status}")
+	public ResponseEntity<?> changeStatus(@PathVariable(required = true) Long id,
+			@PathVariable(required = true) boolean status) {
+
+		try {
+
+			boolean changeStatus = userService.changeStatus(id, status);
+			return ResponseService.setResponse(changeStatus, null);
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro na tentativa de edição dos dados");
+
+		}
+
+	}
+
+	/**
+	 * Retorna o cartão de acesso atual do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@GetMapping("/card/layouts")
+	public ResponseEntity<?> findLayoutsCard() {
+
+		try {
+
+			return ResponseService.setResponse(true, userService.findLayoutsCard());
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao consultar os layouts");
+
+		}
+
+	}
+
+	/**
+	 * Retorna o cartão de acesso atual do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@GetMapping("/{id}/card")
+	public ResponseEntity<?> findCardByUserId(@PathVariable(required = true) Long id) {
+
+		try {
+
+			return ResponseService.setResponse(true, userService.findCardByUserId(id));
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar consultar o cartão de acesso do usuário");
+
+		}
+
+	}
+
+	/**
+	 * Retorna o cartão de acesso atual do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@GetMapping("/{id}/card/print")
+	public ResponseEntity<?> printCardByUserId(@PathVariable(required = true) Long id,
+			@RequestParam(value = "layoutId", required = true) String layoutId) {
+
+		try {
+
+			return ResponseService.setResponse(true, userService.printCardByUserId(id, layoutId));
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar consultar o cartão de acesso do usuário");
+
+		}
+
+	}
+
+	/**
+	 * Retorna o cartão de acesso atual do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@PostMapping("/{id}/card")
+	public ResponseEntity<?> newCardByUserId(@PathVariable(required = true) Long id) {
+
+		try {
+
+			return ResponseService.setResponse(true, userService.newCardByUserId(id));
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar consultar o cartão de acesso do usuário");
+
+		}
+
+	}
+
+	/**
+	 * Atualiza o status do cartão de acesso do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@PutMapping("/{id}/card/change-status/{status}")
+	public ResponseEntity<?> changeStatusCardByUserId(@PathVariable(required = true) Long id,
+			@PathVariable(required = true) Boolean status) {
+
+		try {
+
+			boolean res = userService.changeStatusCardByUserId(id, status);
+			return ResponseService.setResponse(res, null);
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar atualizar o status do cartão");
+
+		}
+
+	}
+
+	/**
+	 * Retorna as digitais cadastradas do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@GetMapping("/{id}/fingers")
+	public ResponseEntity<?> findFingersByUserId(@PathVariable(required = true) Long id) {
+
+		try {
+
+			List<FingerCodeciphersResponseDTO> fingers = userService.findFingersByUserId(id);
+			return ResponseService.setResponse(true, fingers);
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar buscar as digitais do usuário");
+
+		}
+
+	}
+
+	/**
+	 * Atualiza as digitais do usuário
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao deletar o tipo de sanção"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	@PutMapping("/{id}/fingers")
+	public ResponseEntity<?> saveFingersByUserId(@PathVariable(required = true) Long id,
+			@RequestBody List<FingerCodeciphersRequestDTO> fingersCodeciphersRequestDTO) {
+
+		try {
+
+			boolean result = userService.saveFingersByUserId(id, fingersCodeciphersRequestDTO);
+			return ResponseService.setResponse(result, null);
+
+		} catch (ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro ao tentar atualizar a digital do usuário");
+
+		}
+
+	}
+
+	/**
+	 * Cadastra o usuário
+	 * 
+	 * @param userRequestDTO
+	 * @return
+	 */
+	@PostMapping
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> save(@RequestBody UserRequestDTO userRequestDTO, ServletRequest req) {
+
+		try {
+
+			User userLogged = (User) req.getAttribute("sessaoUsuario");
+			userRequestDTO.setMunicipalityId(userLogged.getMunicipalityId());
+			userRequestDTO.setSecretaryId(userLogged.getSecretaryId());
+
+			UserResponseDTO userResponseDTO = userService.save(userRequestDTO, request);
+			return ResponseService.setResponse(true, userResponseDTO);
+
+		} catch (IllegalArgumentException | ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro na tentativa de gravação dos dados");
+
+		}
+
+	}
+
+	/**
+	 * Cria um novo usuário
+	 * 
+	 * @param userRequestDTO
+	 * @return
+	 */
+	@PutMapping
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> update(@RequestBody UserRequestDTO userRequestDTO) {
+
+		try {
+
+			UserResponseDTO userResponseDTO = userService.update(userRequestDTO);
+			return ResponseService.setResponse(true, userResponseDTO);
+
+		} catch (IllegalArgumentException | ResponseFailedCodeciphersException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro na edição dos dados");
+
+		}
+
+	}
+
+	/**
+	 * Cria um novo usuário
+	 * 
+	 * @param loginRequestDTO
+	 * @return
+	 */
+	@PutMapping("/save-password")
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> savePassword(@RequestBody LoginRequestDTO loginRequestDTO) {
+
+		try {
+
+			UserRequestDTO userRequestDTO = new UserRequestDTO();
+			userRequestDTO.setResetPasswordToken(loginRequestDTO.getResetPasswordToken());
+
+			User user = userService.findByResetPasswordToken(userRequestDTO);
+
+			if (user == null) {
+				return ResponseService.setError("Solicitação de redefinição de senha não encontrada.");
+			}
+
+			if (!user.getSignInCount().equals(0)) {
+				long diff = Math.abs(Timestamp.from(Instant.now()).getTime() - user.getResetPasswordSentAt().getTime());
+				long hours = TimeUnit.HOURS.convert(diff, TimeUnit.MILLISECONDS);
+
+				if (hours > 1) {
+					return ResponseService
+							.setError("Solicitação de redefinição expirada.\nPor favor, faça uma nova solicitação.");
+				}
+			}
+
+			user.setEncryptedPassword(loginRequestDTO.getPassword());
+
+			UserResponseDTO userResponseDTO = userService.savePassword(user);
+
+			LoginResponseDTO loginResponseDTO = userService.login(user.getCpf(), loginRequestDTO.getPassword(), request,
+					loginRequestDTO);
+
+			if (loginResponseDTO.getUser() == null) {
+				loginResponseDTO.setUser(userResponseDTO);
+			}
+
+			return ResponseService.setResponse(true, loginResponseDTO);
+
+		} catch (IllegalArgumentException ex) {
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			return ResponseService.setError("Erro na edição dos dados");
+
+		}
+
+	}
+
+	/**
+	 * Método para redefinição de senha
+	 * 
+	 * @param userRequestDTO
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	@PostMapping(value = "/recovery", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity recoveryPassword(@RequestBody LoginRequestDTO loginRequestDTO) {
+
+		try {
+
+			userService.resetPassword(loginRequestDTO.getUsername(), request);
+			return ResponseService.setSuccess("Usuário encontrado. Enviado e-mail de redefinição de senha.");
+
+		} catch (Exception e) {
+			return ResponseService.setError("Erro ao realizar a operação");
+
+		}
+
+	}
+
+	/**
+	 * Efetua o login
+	 * 
+	 * @param userRequestDTO
+	 * @return
+	 */
+	@PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+
+		try {
+
+			return ResponseService.setResponse(true, userService.login(loginRequestDTO, request));
+
+		} catch (AuthenticationException | ResponseFailedCodeciphersException ex) {
+			LoggerFactory.getLogger(UserResource.class).info("Falha ao efetuar o login", ex);
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			LoggerFactory.getLogger(UserResource.class).info("Falha ao efetuar o login", ex);
+			return ResponseService.setError("Erro ao tentar autenticar o usuário");
+
+		}
+
+	}
+
+	/**
+	 * Efetua a troca de secretaria
+	 * 
+	 * @param secretaryId
+	 * @return
+	 */
+	@PostMapping(value = "/switch-access/secretary-id/{secretaryId}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiResponses({ @ApiResponse(code = 500, message = "Erro ao consultar o usuário"),
+			@ApiResponse(code = 403, message = "Mensagem Customizada de erro 403"),
+			@ApiResponse(code = 404, message = "Informação não localizada"),
+			@ApiResponse(code = 204, message = "Nenhum dado encontrado"), })
+	public ResponseEntity<?> switchAcess(@PathVariable(required = true) Long secretaryId) {
+
+		try {
+
+			User userLogged = (User) request.getAttribute("sessaoUsuario");
+			return ResponseService.setResponse(true, userService.login(null, userLogged.getId(), secretaryId, request));
+
+		} catch (AuthenticationException ex) {
+			LoggerFactory.getLogger(UserResource.class).info("Falha ao efetuar a troca de acesso", ex);
+			return ResponseService.setError(ex.getMessage());
+
+		} catch (Exception ex) {
+			LoggerFactory.getLogger(UserResource.class).info("Falha ao efetuar a troca de acesso", ex);
+			return ResponseService.setError("Erro ao tentar autenticar o usuário");
+
+		}
+
+	}
+
+}
